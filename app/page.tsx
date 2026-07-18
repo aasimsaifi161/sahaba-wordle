@@ -1,65 +1,153 @@
-import Image from "next/image";
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Header from '../components/Header';
+import Grid from '../components/Grid';
+import Keyboard from '../components/Keyboard';
+import HelpModal from '../components/HelpModal';
+import StatsModal from '../components/StatsModal';
+import { useGameStore } from '../lib/store';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 export default function Home() {
+  const initGame = useGameStore((state) => state.initGame);
+  const addLetter = useGameStore((state) => state.addLetter);
+  const deleteLetter = useGameStore((state) => state.deleteLetter);
+  const submitGuess = useGameStore((state) => state.submitGuess);
+  const gameStatus = useGameStore((state) => state.gameStatus);
+  const guesses = useGameStore((state) => state.guesses);
+  const isHydrated = useGameStore((state) => state.isHydrated);
+
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+
+  // Initialize game from localStorage
+  useEffect(() => {
+    initGame();
+  }, [initGame]);
+
+  // Handle opening HelpModal automatically on first visit, or showing StatsModal if game finished
+  useEffect(() => {
+    if (isHydrated) {
+      // First visit check
+      const firstVisit = localStorage.getItem('sahaba-wordle-first-visit');
+      if (firstVisit !== 'false') {
+        setIsHelpOpen(true);
+        localStorage.setItem('sahaba-wordle-first-visit', 'false');
+      }
+
+      // If game is already won or lost, open stats modal
+      if (gameStatus !== 'IN_PROGRESS') {
+        setIsStatsOpen(true);
+      }
+    }
+  }, [isHydrated, gameStatus]);
+
+  // Trigger win confetti
+  const triggerConfetti = () => {
+    const duration = 2.5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval: NodeJS.Timeout = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      // Confetti burst from left and right corners
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+    }, 250);
+  };
+
+  const handleWin = () => {
+    triggerConfetti();
+    // Delay opening the stats modal to let user watch the tiles flip
+    setTimeout(() => {
+      setIsStatsOpen(true);
+      toast.success('Congratulations! You found the Sahabi!');
+    }, 1800);
+  };
+
+  const handleInvalidGuess = (msg: string) => {
+    toast.error(msg, {
+      duration: 1500,
+    });
+  };
+
+  // Keyboard listener for desktop players
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if modals are open
+      if (isHelpOpen || isStatsOpen) return;
+      if (gameStatus !== 'IN_PROGRESS') return;
+
+      // Ignore meta keys
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+      const key = e.key.toUpperCase();
+
+      if (key === 'ENTER') {
+        submitGuess(handleInvalidGuess, handleWin);
+      } else if (key === 'BACKSPACE') {
+        deleteLetter();
+      } else if (/^[A-Z]$/.test(key)) {
+        addLetter(key);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [gameStatus, isHelpOpen, isStatsOpen, submitGuess, addLetter, deleteLetter]);
+
+  // Open stats modal automatically when game transitions to LOST
+  useEffect(() => {
+    if (gameStatus === 'LOST') {
+      setTimeout(() => {
+        setIsStatsOpen(true);
+        toast.info('Nice try! Check today\'s answer.');
+      }, 1800);
+    }
+  }, [gameStatus]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col h-[100dvh] w-full overflow-hidden transition-colors duration-200">
+      <Header 
+        onOpenHelp={() => setIsHelpOpen(true)} 
+        onOpenStats={() => setIsStatsOpen(true)} 
+      />
+
+      <main className="flex-1 flex flex-col justify-between max-w-md mx-auto w-full select-none">
+        {/* Playable Grid */}
+        <Grid />
+
+        {/* Screen Keyboard */}
+        <Keyboard 
+          onInvalid={handleInvalidGuess} 
+          onWin={handleWin} 
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
       </main>
+
+      {/* Modal dialogs */}
+      <HelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+      />
+
+      <StatsModal 
+        isOpen={isStatsOpen} 
+        onClose={() => setIsStatsOpen(false)} 
+      />
     </div>
   );
 }
