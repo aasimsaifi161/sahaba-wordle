@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Share2, Award, Info, RefreshCw } from 'lucide-react';
+import { X, Share2, Award, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../lib/store';
 import { getGuessStatuses } from '../lib/statuses';
@@ -86,24 +86,6 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
     }
   };
 
-  // 3. Reset stats logic
-  const handleReset = () => {
-    if (confirm("Are you sure you want to reset all game history and statistics? This will reset your stats and start today's game fresh.")) {
-      const year = new Date().getFullYear();
-      const month = String(new Date().getMonth() + 1).padStart(2, '0');
-      const day = String(new Date().getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${day}`;
-
-      localStorage.removeItem('sahaba-wordle-stats');
-      localStorage.removeItem(`sahaba-wordle-state-${todayStr}`);
-      localStorage.removeItem('sahaba-wordle-first-visit');
-      toast.success("Game history and statistics reset.");
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
-  };
-
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -151,17 +133,11 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
             </div>
           )}
 
-          {/* Stats Header with Reset button */}
-          <div className="flex items-center justify-between mb-3 mt-1.5 pr-6">
+          {/* Stats Header */}
+          <div className="flex items-center mb-3 mt-1.5">
             <h2 className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
               <Info className="w-4 h-4 text-correct" /> Statistics
             </h2>
-            <button
-              onClick={handleReset}
-              className="text-[10px] text-red-500 hover:text-red-600 dark:hover:text-red-400 font-extrabold flex items-center gap-1 transition-colors border border-red-500/10 hover:border-red-500/40 bg-red-500/5 px-2 py-0.5 rounded-md cursor-pointer active:scale-95"
-            >
-              <RefreshCw className="w-3 h-3" /> Reset History
-            </button>
           </div>
 
           {/* Stats Dashboard Grid */}
@@ -213,18 +189,6 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
               })}
             </div>
           </div>
-
-          {/* Companion Fact Card */}
-          {gameStatus !== 'IN_PROGRESS' && (
-            <div className="bg-correct/5 border border-correct/10 p-3 rounded-lg mb-4">
-              <h4 className="text-[10px] font-bold text-correct uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
-                Companion Fact Sheet
-              </h4>
-              <p className="text-[11px] text-foreground/80 leading-relaxed italic">
-                "{solution.fact}"
-              </p>
-            </div>
-          )}
 
           {/* Footer Interactive Actions */}
           <div className="flex items-center justify-between border-t border-border-cell/60 pt-3 mt-1 gap-3">

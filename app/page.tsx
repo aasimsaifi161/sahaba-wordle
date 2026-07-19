@@ -6,6 +6,7 @@ import Grid from '../components/Grid';
 import Keyboard from '../components/Keyboard';
 import HelpModal from '../components/HelpModal';
 import StatsModal from '../components/StatsModal';
+import HintModal from '../components/HintModal';
 import { useGameStore } from '../lib/store';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -18,9 +19,11 @@ export default function Home() {
   const gameStatus = useGameStore((state) => state.gameStatus);
   const guesses = useGameStore((state) => state.guesses);
   const isHydrated = useGameStore((state) => state.isHydrated);
+  const solution = useGameStore((state) => state.solution);
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
 
   // Initialize game from localStorage
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if modals are open
-      if (isHelpOpen || isStatsOpen) return;
+      if (isHelpOpen || isStatsOpen || isHintOpen) return;
       if (gameStatus !== 'IN_PROGRESS') return;
 
       // Ignore meta keys
@@ -108,7 +111,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameStatus, isHelpOpen, isStatsOpen, submitGuess, addLetter, deleteLetter]);
+  }, [gameStatus, isHelpOpen, isStatsOpen, isHintOpen, submitGuess, addLetter, deleteLetter]);
 
   // Open stats modal automatically when game transitions to LOST
   useEffect(() => {
@@ -124,6 +127,7 @@ export default function Home() {
     <div className="flex flex-col h-[100dvh] w-full overflow-hidden transition-colors duration-200">
       <Header 
         onOpenHelp={() => setIsHelpOpen(true)} 
+        onOpenHint={() => setIsHintOpen(true)}
         onOpenStats={() => setIsStatsOpen(true)} 
       />
 
@@ -142,6 +146,11 @@ export default function Home() {
       <HelpModal 
         isOpen={isHelpOpen} 
         onClose={() => setIsHelpOpen(false)} 
+      />
+
+      <HintModal 
+        isOpen={isHintOpen} 
+        onClose={() => setIsHintOpen(false)} 
       />
 
       <StatsModal 

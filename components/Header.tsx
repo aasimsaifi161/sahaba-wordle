@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { HelpCircle, BarChart2, Sun, Moon } from 'lucide-react';
+import { HelpCircle, BarChart2, Sun, Moon, Lightbulb } from 'lucide-react';
 import { useGameStore } from '../lib/store';
 
 interface HeaderProps {
   onOpenHelp: () => void;
+  onOpenHint: () => void;
   onOpenStats: () => void;
 }
 
-export default function Header({ onOpenHelp, onOpenStats }: HeaderProps) {
+export default function Header({ onOpenHelp, onOpenHint, onOpenStats }: HeaderProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const isHydrated = useGameStore((state) => state.isHydrated);
 
@@ -43,14 +44,27 @@ export default function Header({ onOpenHelp, onOpenStats }: HeaderProps) {
   return (
     <header className="w-full border-b border-border-cell py-3 px-4 bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
       <div className="max-w-md mx-auto flex items-center justify-between">
-        <button
-          onClick={onOpenHelp}
-          className="p-2 rounded-lg hover:bg-border-cell text-foreground/80 hover:text-foreground transition-colors duration-150"
-          aria-label="How to play"
-        >
-          <HelpCircle className="w-5 h-5" />
-        </button>
+        {/* Left Side: Help and Hint Buttons */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={onOpenHelp}
+            className="p-2 rounded-lg hover:bg-border-cell text-foreground/80 hover:text-foreground transition-colors duration-150"
+            aria-label="How to play"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={onOpenHint}
+            disabled={!isHydrated}
+            className="p-2 rounded-lg hover:bg-border-cell text-foreground/80 hover:text-foreground transition-colors duration-150 disabled:opacity-50"
+            aria-label="Today's Hint"
+          >
+            <Lightbulb className="w-5 h-5 text-correct" />
+          </button>
+        </div>
 
+        {/* Center: Branding */}
         <div className="flex flex-col items-center">
           <h1 className="text-xl font-bold tracking-wider text-foreground select-none flex items-center gap-1 font-sans">
             SAHABA <span className="text-correct font-extrabold">WORDLE</span>
@@ -60,7 +74,8 @@ export default function Header({ onOpenHelp, onOpenStats }: HeaderProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        {/* Right Side: Stats and Theme Toggle */}
+        <div className="flex items-center gap-0.5">
           <button
             onClick={onOpenStats}
             disabled={!isHydrated}
